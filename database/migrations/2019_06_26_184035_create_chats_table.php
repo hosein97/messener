@@ -15,6 +15,8 @@ class CreateChatsTable extends Migration
     {
         Schema::create('chats', function (Blueprint $table) {
             $table->increments('id');
+            $table->String('name');
+            $table->boolean('isGroup');
             $table->timestamps();
         });
     }

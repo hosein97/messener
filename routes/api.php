@@ -25,5 +25,5 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::post('chat', 'ChatController@create');
     Route::get('chats', 'ChatController@getAll');
     Route::post('chats/{chat_id}', 'ChatController@addMessage');
-    // Route::get('closed', 'DataController@closed');
+    Route::get('chats/{chat_id}', 'ChatController@getMessages');
 });

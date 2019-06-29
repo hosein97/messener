@@ -25,6 +25,8 @@ class ChatController extends Controller
             array_push($users, $user[0]);
         }
         $chat = new Chat;
+        $chat->name=$chatName;
+        $chat->isGroup=$isGroup;
         $chat->save();
         if (count($users) > 1){
             if ($isGroup){
@@ -40,6 +42,7 @@ class ChatController extends Controller
                 $chat->users()->save($user, ['permissions' => Config::get('constants.permissions.NULL')]);
             }
             $chat->users()->save(JWTAuth::user(), ['permissions' => Config::get('constants.permissions.SEND_MESSAGE') + Config::get('constants.permissions.ADD_MEMBER')]);
+            
             }
         }else if (count($users) == 1){
             $chat->users()->save($users[0], ['permissions' => Config::get('constants.permissions.SEND_MESSAGE')]);
@@ -54,6 +57,18 @@ class ChatController extends Controller
             $query->where('id', JWTAuth::user()->id);
         }])->get();
         if (count($chats) > 0){
+            foreach ($chats as $chat)
+            {
+                if (count($chat->users()->get()) == 2){ // private
+                    $users = $chat->users()->get();
+                    foreach ($users as $user){
+                        if ($user->id != JWTAuth::user()->id){
+                            $chat->name = $user->username;
+                            continue;
+                        }
+                    }
+                }
+            }
             return response()->json($chats,200);
         }
         return response()->json('Chat not found!',404);
@@ -62,13 +77,31 @@ class ChatController extends Controller
     public function addMessage(Request $request, $chatId){
         $chat = Chat::where('id', $chatId)->get();
         if (count($chat) > 0){
-            $text = $request->input('text');
-            $message = new Message;
-            $message->user()->associate(JWTAuth::user());
-            $message->chat()->associate($chat[0]);
-            $message->text = $text;
-            $message->save();
-            return response()->json($message,200);
+            $permission = $chat[0]->users->find(JWTAuth::user()->id)->pivot->permissions;
+            // return response()->json(1 == Config::get('constants.permissions.SEND_MESSAGE'),200);
+            if ((Config::get('constants.permissions.SEND_MESSAGE') & $permission) == Config::get('constants.permissions.SEND_MESSAGE')){
+                $text = $request->input('text');
+                $message = new Message;
+                $message->user()->associate(JWTAuth::user());
+                $message->chat()->associate($chat[0]);
+                $message->text = $text;
+                $message->save();
+                return response()->json($message,200);
+            }else{
+                return response()->json('Forbidden!',403);
+            }
+        }
+        return response()->json('Chat not found',404);
+    }
+
+    public function getMessages(Request $request, $chatId){
+        $chat = Chat::where('id', $chatId)->get();
+        if (count($chat) > 0){
+            $user = $chat[0]->users->find(JWTAuth::user()->id);
+            if (is_null($user)){
+                return response()->json('Forbidden!',403);
+            }
+            return response()->json($chat[0]->messages()->get(),200);
         }
         return response()->json('Chat not found',404);
     }
