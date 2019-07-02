@@ -73,4 +73,27 @@ class UserController extends Controller
 
                 return response()->json(compact('user'));
         }
+
+
+        public function addContact(Request $request){
+            $contactName = $request->input('contact_name');
+            $contact = User::where('username', $contactName)->get();
+            
+            if (count($contact) > 0){
+                $user = JWTAuth::user();
+                if ($user->contacts->contains('id',$contact[0]->id)){
+                    return response()->json('Duplicate error',409);
+                }
+                $user->contacts()->save( $contact[0] );
+                return response()->json($contact[0],200);
+            }
+            return response()->json('Contact not found',404);
+
+        }
+
+        public function getContacts(Request $request){
+            $user = JWTAuth::user();
+            $contacts = $user->contacts()->get();
+            return response()->json($contacts,200);
+        }
 }

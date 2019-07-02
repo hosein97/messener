@@ -22,8 +22,16 @@ Route::post('login', 'UserController@authenticate');
 
 Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('user', 'UserController@getAuthenticatedUser');
+    Route::get('user/contacts', 'UserController@getContacts');
+    Route::post('user/contacts/create', 'UserController@addContact');
     Route::post('chat', 'ChatController@create');
     Route::get('chats', 'ChatController@getAll');
     Route::post('chats/{chat_id}', 'ChatController@addMessage');
     Route::get('chats/{chat_id}', 'ChatController@getMessages');
+    Route::get('chats/{chat_id}/permissions', 'ChatController@getPermissions');
+    Route::post('chats/{chat_id}/members/add', 'ChatController@addMember');
+    Route::get('chats/{chat_id}/members', 'ChatController@getMembers');
+    Route::post('chats/{chat_id}/members/delete', 'ChatController@deleteMembers');
+    Route::post('chats/{chat_id}/members/{member_id}/block', 'ChatController@blockMember');
+    Route::post('chats/{chat_id}/members/{member_id}/unblock', 'ChatController@unblockMember');
 });
